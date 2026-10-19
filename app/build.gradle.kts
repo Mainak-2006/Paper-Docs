@@ -104,6 +104,13 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
 
+    // App Check. The security rules are the only enforced boundary on Firestore, so the client
+    // proves its own integrity before the rules are consulted. The debug provider is used only in
+    // debug builds so local and instrumentation runs can register the token it prints.
+    implementation("com.google.firebase:firebase-appcheck")
+    implementation("com.google.firebase:firebase-appcheck-playintegrity")
+    debugImplementation("com.google.firebase:firebase-appcheck-debug")
+
     // Drive needs a real OAuth 2 access token with the Drive scope, which the Credential
     // Manager flow does not provide. This is the supported way to obtain one.
     implementation("com.google.android.gms:play-services-auth:21.4.0")

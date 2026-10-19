@@ -235,6 +235,35 @@ Drive sync uses the Drive REST v3 API directly, so the API must be switched on:
 
 ---
 
+### 7. Enable App Check
+
+App Check makes the caller prove app integrity before Firestore consults the rules. It adds no rule
+of its own; the rules already refuse anything unauthenticated. The value is that it means a
+repackaged copy of the app, or someone scripting Firestore from their own code, fails even with a
+valid Google account.
+
+**Order matters here, and the dangerous direction is running out of sequence.**
+
+The client half is already done — `DocsApplication` installs a provider at startup, the debug
+provider for debug builds and Play Integrity for release, selected by source set rather than a
+runtime flag. What is missing is the console half, which cannot be done from here.
+
+1. **Register the app.** Firebase console → **App Check** → **Apps** → register `com.company.paperdocs`.
+2. **Register the release SHA-1** as the Play Integrity provider needs it. The SHA-1 added in step 2
+   above is already on the Android app, and App Check reuses it.
+3. **Leave enforcement off for Firestore until a build containing the App Check code is in your Play
+   rollout.**
+
+Step 3 is the one to get wrong at a cost. App Check is enforced **server-side by the console**, not
+by the app. If you switch enforcement on now, every Firestore call in the *currently published*
+build starts failing, because no build in the wild yet sends an App Check token. The symptom is not
+a crash — Paper Docs ships no crash reporting — so it appears as every document silently stuck on
+"Not synced", with the reason only visible in the app's own sync error text and in logcat.
+
+Once enforcement is on, verify by installing from the Play rollout and checking that a document
+saves and syncs. If it does not, check that the install came from Play: Play Integrity does not
+attest a sideloaded APK, which is the intended behaviour.
+
 ### Note on the credentials library
 
 `googleid:1.1.1` is compiled against `androidx.credentials:1.3.0-beta01` while the app resolves
