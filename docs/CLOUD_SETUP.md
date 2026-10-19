@@ -43,7 +43,7 @@ build signed with `~/.keys/paperdocs-release.jks` presents:
 
 ```
 SHA1: 1A:1E:4E:F8:E7:E3:FC:AA:24:C5:E2:CF:CB:86:32:14:BC:FB:66:8D
-SHA-256: 7D:23:9C:72:3B:F2:A5:BD:7C:4A:BA:CC:8A:A0:49:2A:47:31:98:87:2B:A5:9D:13:0D:F2:4C:EF:48:00:49:84
+SHA256: 7D:23:9C:72:3B:F2:A5:BD:7C:4A:BA:CC:8A:A0:49:2A:47:31:98:87:2B:A5:9D:13:0D:F2:4C:EF:48:00:49:84
 ```
 
 Register **both**. Without the release SHA-1, Google sign-in fails on every published build with
