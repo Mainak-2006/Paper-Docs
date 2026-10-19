@@ -6,31 +6,6 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Every subcollection the app uses sits at
-    //   /users/{owner}/documents/{docId}/<name>/{personUid}
-    // so the segments before the collection name are always
-    //   path == ["users", owner, "documents", docId]
-    // A recursive wildcard captures exactly those four segments, which lets the helpers below
-    // recover the owner and document id without trusting anything the caller wrote.
-    function docShape(path) {
-      return path.size() == 4
-             && path[0] == 'users'
-             && path[2] == 'documents';
-    }
-
-    function ownsDocument(path) {
-      return signedIn() && docShape(path) && path[1] == request.auth.uid;
-    }
-
-    // The owner always qualifies. Anyone else has to be named in the containing document's
-    // sharedWith map, which is the same condition the document read rule uses.
-    function canSeeDocument(path) {
-      return ownsDocument(path)
-             || (docShape(path)
-                 && get(/databases/$(database)/documents/users/$(path[1])/documents/$(path[3]))
-                      .data.sharedWith[request.auth.uid] != null);
-    }
-
     // ---------------------------------------------------------------- directory
 
     // Email -> uid lookup, used when sharing. Readable by any signed-in user.
@@ -97,7 +72,11 @@ service cloud.firestore {
           get(/databases/$(database)/documents/users/$(userId)/documents/$(docId))
                .data.sharedWith[request.auth.uid] != null
         );
-        allow write: if signedIn() && request.auth.uid == personUid;
+        allow create, update: if signedIn() && request.auth.uid == personUid;
+        // The owner sweeps the presence subcollection when a document is deleted. Without this the
+        // rows addressed to other people would be stranded behind a deleted document, because the
+        // rule above only lets each user write their own row.
+        allow delete: if signedIn() && request.auth.uid == userId;
       }
     }
 
@@ -111,31 +90,31 @@ service cloud.firestore {
     // A bare `allow read: if signedIn()` here is a data leak, because a collection group query is
     // authorized against the documents it returns and never against their ancestors. Any signed-in
     // user could run collectionGroup("sharedWith").get() and read every share entry in the
-    // application -- owner uid, document id, document title, role -- not just their own. So these
-    // rules check the contents of the returned document or the owner of the containing path.
+    // application -- owner uid, document id, document title, role -- not just their own.
+    //
+    // These rules therefore grant only what the *nested* matches cannot: a person acting on their
+    // own row, identified from the row's own contents. Every owner case is already covered by the
+    // nested matches above, because Firestore allows a request when ANY matching rule allows it.
+    // That is also why nothing here parses the {path=**} wildcard: it is a list with no usable
+    // length function, and calling one raises a runtime error, which Firestore treats as a denial.
+    // An earlier version of these rules recovered the owner from path[1] and guarded it with
+    // path.size(); that silently denied every read it was supposed to allow, including all presence.
 
-    // Shared-document index: the recipient may read their own entry (that is what
-    // sharedWithMe() lists), and the owner may read the entries under their own document.
+    // Shared-document index: a recipient reads their own entry, which is exactly the query behind
+    // CloudSync.sharedWithMe(), and deletes it to hide the document (CloudSync.hideShared()).
     match /{path=**}/sharedWith/{personUid} {
-      allow get, list: if signedIn() && (
-        resource.data.uid == request.auth.uid ||
-        ownsDocument(path)
-      );
-      // hideShared() removes the signed-in user's own entry from someone else's document. The
-      // nested rule above only lets the owner write here, so without this a recipient cannot hide
-      // a document that was shared with them.
+      allow get, list: if signedIn() && resource.data.uid == request.auth.uid;
       allow delete: if signedIn() && personUid == request.auth.uid;
     }
 
-    // Presence: only people who can open the document may see who else is in it. The policy states
-    // this, and a bare `allow read: if signedIn()` would have exposed every user's viewing state
-    // app-wide.
+    // Presence: a person may read and clear their own rows. deleteAllCloudData() uses exactly this,
+    // sweeping the caller's presence out of documents other people own. Owners reading the whole
+    // presence list, and collaborators reading it to see who else has the document open, are both
+    // served by the nested match above.
     match /{path=**}/presence/{personUid} {
-      allow get, list: if signedIn() && canSeeDocument(path);
+      allow get, list: if signedIn() && resource.data.uid == request.auth.uid;
       allow create, update: if signedIn() && request.auth.uid == personUid;
-      // The owner clears presence rows when a document is deleted; the nested rule above only
-      // permits a user to write their own row, which would strand everyone else's rows behind.
-      allow delete: if signedIn() && (request.auth.uid == personUid || ownsDocument(path));
+      allow delete: if signedIn() && personUid == request.auth.uid;
     }
   }
 }

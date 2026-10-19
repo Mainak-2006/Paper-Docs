@@ -92,3 +92,5 @@ node_modules/
 ._*
 Thumbs.db
 desktop.ini
+# Firestore emulator local state, created by firebase emulators:exec.
+.firebase/

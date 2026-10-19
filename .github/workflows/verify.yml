@@ -57,6 +57,21 @@ jobs:
           path: app/build/reports/tests/testDebugUnitTest/
           retention-days: 14
 
+      # firestore.rules is the app's only enforced security boundary and it runs on Google's
+      # servers, so no Kotlin test can observe it. These run the deployed ruleset against the
+      # Firestore emulator. They have already caught one rule that compiled, deployed, and silently
+      # denied everything it was meant to allow.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install rules test dependencies
+        run: npm ci
+
+      - name: Run Firestore security rules tests
+        run: npm run test:rules:emulated
+
       # mapping.txt is what turns an obfuscated R8 stack trace back into source. Without it a crash
       # report from a release build is unreadable, so it is kept for as long as the build could
       # still be running in the wild.
