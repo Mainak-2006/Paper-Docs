@@ -1,12 +1,66 @@
+# Build output. **/build/ also covers app/build, which holds the APK, the R8 mapping and the
+# baseline profiles -- all reproducible from source.
 .gradle/
 .kotlin/
 **/build/
-local.properties
-.idea/
-.tools/
+captures/
+*.hprof
+.gradleletasknamecache
+
+# Packaged artifacts. A Release App Bundle is the Play upload unit and is large, and neither it nor
+# a split APK should ever be committed by accident.
 *.apk
+*.apks
+*.aab
 *.apkm
 *.xapk
+*.idsig
+*.dex
+
+# Machine-local configuration. local.properties holds sdk.dir, which points at one developer's SDK.
+local.properties
+
+# IDE state. .vscode/ is deliberately NOT ignored: its settings.json is shared project
+# configuration, unlike the rest of .idea/ which is per-developer and churns constantly.
+.idea/
+*.iml
+*.ipr
+*.iws
+.fleet/
+.tools/
+
+# Release signing material. A published signing key cannot be rotated for an existing Play listing,
+# so neither the keystore nor its passwords may ever reach the repository. PKCS12 stores are
+# covered by *.p12 and *.pfx as well as *.jks, because keytool's default store type is PKCS12 and
+# it is routinely named either way.
+keystore.properties
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.bks
+*.pem
+*.key
+*.pkcs12
+
+# Other secrets and local environment overrides.
+.env
+.env.*
+secrets.properties
+
+# Firebase and Google Cloud CLI output. The debug logs can contain project identifiers, auth
+# tokens and emulator traffic, so they are never useful in a repository.
+.firebase/
+firebase-debug.log
+firestore-debug.log
+database-debug.log
+pubsub-debug.log
+ui-debug.log
+*-debug.log
+*.log
+
+# RE research inputs. research/sdk-badging.txt and the screenshots stay tracked, because the findings
+# reference them.
 research/sdk-resources.txt
 research/sdk-manifest.txt
 research/base-artifact.json
@@ -21,11 +75,20 @@ research/*-ui.xml
 # actually depends on stays in research/, and the full archive stays local as before.
 com.google.android.apps.docs.editors.docs/
 
-# firebase-tools deploy cache, a generated local artifact.
-site/.firebase/
+# Node tooling, if site/ ever gains a build step.
+node_modules/
+.npm/
 
-# Release signing material. A published signing key cannot be rotated for an existing Play
-# listing, so neither the keystore nor its passwords may ever reach the repository.
-keystore.properties
-*.jks
-*.keystore
+# Editor and operating system noise. *.orig and *.rej are conflict leftovers from a bad merge or a
+# failed patch, which is exactly the kind of file that gets committed by accident and then lives in
+# history forever.
+*~
+*.swp
+*.swo
+*.bak
+*.orig
+*.rej
+.DS_Store
+._*
+Thumbs.db
+desktop.ini
