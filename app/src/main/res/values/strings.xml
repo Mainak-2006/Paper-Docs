@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Firestore database id for project paper-docs-006.
+
+      The database was created in the console with the literal name "default". That is NOT the
+      built-in "(default)" database, so the client must be pointed at it explicitly.
+
+      Leave this empty to target the built-in "(default)" database instead.
+
+      CloudSync reads this at runtime via FirebaseFirestore.getInstance(databaseId).
+    -->
+    <string name="firestore_database_id" translatable="false">default</string>
+</resources>

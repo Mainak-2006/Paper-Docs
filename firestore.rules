@@ -1,0 +1,141 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Every subcollection the app uses sits at
+    //   /users/{owner}/documents/{docId}/<name>/{personUid}
+    // so the segments before the collection name are always
+    //   path == ["users", owner, "documents", docId]
+    // A recursive wildcard captures exactly those four segments, which lets the helpers below
+    // recover the owner and document id without trusting anything the caller wrote.
+    function docShape(path) {
+      return path.size() == 4
+             && path[0] == 'users'
+             && path[2] == 'documents';
+    }
+
+    function ownsDocument(path) {
+      return signedIn() && docShape(path) && path[1] == request.auth.uid;
+    }
+
+    // The owner always qualifies. Anyone else has to be named in the containing document's
+    // sharedWith map, which is the same condition the document read rule uses.
+    function canSeeDocument(path) {
+      return ownsDocument(path)
+             || (docShape(path)
+                 && get(/databases/$(database)/documents/users/$(path[1])/documents/$(path[3]))
+                      .data.sharedWith[request.auth.uid] != null);
+    }
+
+    // ---------------------------------------------------------------- directory
+
+    // Email -> uid lookup, used when sharing. Readable by any signed-in user.
+    //
+    // Writes are bound to the caller's own verified email claim. Without that binding any signed-in
+    // user could claim an arbitrary address in the table, and a later share to that address would
+    // resolve to the wrong account: write SHA256("victim@example.com") -> attacker uid, wait for
+    // the victim to share a document with their own address, and the document is handed over. The
+    // email field must therefore equal the email on the caller's own ID token.
+    match /directory/{emailHash} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+                            && request.resource.data.uid == request.auth.uid
+                            && request.resource.data.email == request.auth.token.email;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    // ---------------------------------------------------------------- documents
+
+    match /users/{userId}/documents/{docId} {
+      // Owners, plus anyone the document is shared with.
+      allow get, list: if signedIn() && (
+        request.auth.uid == userId ||
+        resource.data.sharedWith[request.auth.uid] != null
+      );
+      allow create, delete: if signedIn() && request.auth.uid == userId;
+
+      // Owners may change anything. Editors may change the text but not the access control list:
+      // without the affectedKeys() restriction an editor could rewrite sharedWith and grant
+      // themselves EDITOR permanently, or revoke the owner and the other collaborators. Only the
+      // fields CloudSync.payload() actually writes as document content are allowed here.
+      allow update: if signedIn() && (
+        request.auth.uid == userId ||
+        (resource.data.sharedWith[request.auth.uid] == 'EDITOR' &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+           'localId',
+           'title',
+           'content',
+           'marks',
+           'updatedAt',
+           'origin'
+         ]))
+      );
+
+      // Rules do not cascade to subcollections, so these need their own match.
+      //
+      // These are NOT left at `allow read: if signedIn()`. Firestore authorizes a document read by
+      // the rules on that document alone, not on its parents, so an open read here would let any
+      // signed-in user who knows (or guesses) an owner uid and a document id read the share list
+      // and the presence list of a document they cannot otherwise open. The share entries carry
+      // the document title, and the presence entries carry names and photo URLs.
+      match /sharedWith/{personUid} {
+        allow read: if signedIn() && (
+          request.auth.uid == userId ||
+          resource.data.uid == request.auth.uid
+        );
+        allow write: if signedIn() && request.auth.uid == userId;
+      }
+
+      match /presence/{personUid} {
+        allow read: if signedIn() && (
+          request.auth.uid == userId ||
+          resource.data.uid == request.auth.uid ||
+          get(/databases/$(database)/documents/users/$(userId)/documents/$(docId))
+               .data.sharedWith[request.auth.uid] != null
+        );
+        allow write: if signedIn() && request.auth.uid == personUid;
+      }
+    }
+
+    // ---------------------------------------------------------------- collection group rules
+
+    // Firestore only authorizes a collectionGroup() query through a rule written with a recursive
+    // wildcard, so the nested matches above do NOT cover the queries in
+    // CloudSync.sharedWithMe() and CloudSync.deleteAllCloudData(). Without these the shared-with-me
+    // lookup fails with PERMISSION_DENIED and nothing shared is ever listed.
+    //
+    // A bare `allow read: if signedIn()` here is a data leak, because a collection group query is
+    // authorized against the documents it returns and never against their ancestors. Any signed-in
+    // user could run collectionGroup("sharedWith").get() and read every share entry in the
+    // application -- owner uid, document id, document title, role -- not just their own. So these
+    // rules check the contents of the returned document or the owner of the containing path.
+
+    // Shared-document index: the recipient may read their own entry (that is what
+    // sharedWithMe() lists), and the owner may read the entries under their own document.
+    match /{path=**}/sharedWith/{personUid} {
+      allow get, list: if signedIn() && (
+        resource.data.uid == request.auth.uid ||
+        ownsDocument(path)
+      );
+      // hideShared() removes the signed-in user's own entry from someone else's document. The
+      // nested rule above only lets the owner write here, so without this a recipient cannot hide
+      // a document that was shared with them.
+      allow delete: if signedIn() && personUid == request.auth.uid;
+    }
+
+    // Presence: only people who can open the document may see who else is in it. The policy states
+    // this, and a bare `allow read: if signedIn()` would have exposed every user's viewing state
+    // app-wide.
+    match /{path=**}/presence/{personUid} {
+      allow get, list: if signedIn() && canSeeDocument(path);
+      allow create, update: if signedIn() && request.auth.uid == personUid;
+      // The owner clears presence rows when a document is deleted; the nested rule above only
+      // permits a user to write their own row, which would strand everyone else's rows behind.
+      allow delete: if signedIn() && (request.auth.uid == personUid || ownsDocument(path));
+    }
+  }
+}

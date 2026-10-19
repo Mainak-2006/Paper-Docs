@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Paper Docs stores documents in a private database under the app's own directory, and the drawer
+  promises "Everything stays on your device". This makes that promise enforceable rather than
+  cosmetic: a user's documents are never copied into a cloud backup, and never travel to another
+  device through Android's device-to-device transfer.
+
+  allowBackup="false" in the manifest already turns off cloud backup. This file is what also covers
+  device-to-device transfer, which allowBackup does not, and it documents the intent in one place.
+
+  Sync between a reader's own devices happens through the app's Firestore account, which is
+  revocable and can be deleted from the account sheet. Excluding the backup path does not weaken it.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>

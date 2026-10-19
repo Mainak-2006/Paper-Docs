@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — Paper Docs</title>
+<meta name="description" content="How Paper Docs handles your documents, your Google account, and Google Drive access.">
+<style>
+  :root { --ink:#202124; --muted:#5f6368; --line:#e3e7ed; --blue:#1a73e8; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; color:var(--ink); background:#fff; }
+  main { max-width:760px; margin:0 auto; padding:48px 24px 80px; }
+  h1 { font-size:32px; line-height:1.2; margin:0 0 8px; letter-spacing:-.5px; }
+  h2 { font-size:20px; margin:36px 0 8px; }
+  p, li { color:var(--ink); }
+  .lede { color:var(--muted); margin:0 0 8px; }
+  .meta { color:var(--muted); font-size:14px; margin:0 0 32px; }
+  hr { border:0; border-top:1px solid var(--line); margin:32px 0; }
+  a { color:var(--blue); }
+  code { background:#f1f3f4; padding:2px 6px; border-radius:4px; font-size:14px; }
+  .card { background:#f8fafd; border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin:16px 0; }
+  .card strong { display:block; margin-bottom:4px; }
+  ul { padding-left:22px; }
+  li { margin:6px 0; }
+  footer { margin-top:48px; padding-top:24px; border-top:1px solid var(--line); color:var(--muted); font-size:14px; }
+  .todo { background:#fef7e0; border:1px solid #fdd663; border-radius:8px; padding:12px 14px; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Privacy Policy</h1>
+<p class="lede">Paper Docs — an offline-first document editor for Android.</p>
+<p class="meta">Effective <span id="effective">19 October 2026</span></p>
+
+<hr>
+
+<h2>Summary</h2>
+<p>Your documents live on your device. Paper Docs only sends anything to the cloud if you
+choose to sign in, and when it does, it uses your own private storage under your own Google
+account. There is no advertising, no analytics inside the app, and no selling of data.</p>
+
+<h2>What stays on your device</h2>
+<p>Paper Docs keeps everything in a private database inside the app's own storage:</p>
+<ul>
+  <li>Your documents, including their text and formatting</li>
+  <li>Up to 30 earlier versions of each document, for recovery</li>
+  <li>Private notes you attach to a document</li>
+  <li>Your starred, trashed, and sort preferences</li>
+</ul>
+<p>None of this is transmitted unless you sign in and sync.</p>
+
+<h2>What is sent to Google, and only if you sign in</h2>
+
+<div class="card">
+  <strong>Your account</strong>
+  Signing in with Google shares your Google account identifier, display name, email address,
+  and profile photo URL with Paper Docs, through Firebase Authentication.
+</div>
+
+<div class="card">
+  <strong>Your documents</strong>
+  When sync is on, Paper Docs uploads each document's title, its full text, and its formatting
+  to your private Firestore database, filed under your account so that only you (and anyone you
+  explicitly share with) can read it.
+</div>
+
+<div class="card">
+  <strong>Being online in a shared document</strong>
+  While you have a document open, Paper Docs records that you are viewing it — your account
+  identifier, name, and photo — so that other people working in the same document can see that
+  you are there.
+</div>
+
+<div class="card">
+  <strong>Finding collaborators by email</strong>
+  So that another person can share a document with you by typing your email address, Paper Docs
+  publishes a lookup entry that maps your email address to your account identifier. Any signed-in
+  Paper Docs user can read that lookup, which means a signed-in user could discover which email
+  addresses have an account. It contains no other information. A signed-in user can only publish
+  an entry for their own verified address, so nobody can register your address in the lookup or
+  receive documents shared with it.
+</div>
+
+<h2>Google Drive</h2>
+<p>Drive access is optional and is requested only when you choose it. Paper Docs requests two
+scopes:</p>
+<ul>
+  <li><code>drive.file</code> — create and manage only the files Paper Docs itself creates.</li>
+  <li><code>drive.readonly</code> — list and read those same files back when you import them.</li>
+</ul>
+<p>Paper Docs does not read, list, or modify files in your Drive that it did not create, and it
+never searches your Drive's contents. Copies you export are stored in your Drive in the location
+you pick.</p>
+
+<h2>Sharing a document</h2>
+<p>If you share a document, the person you name can open it. You choose whether they are a
+<strong>Viewer</strong> (read and export only) or an <strong>Editor</strong> (can also change the
+text). You can remove someone's access at any time; the app then stops syncing that document for
+them.</p>
+
+<h2>What we do not do</h2>
+<ul>
+  <li>No advertising, and no advertising networks.</li>
+  <li>No usage analytics or profiling inside the app.</li>
+  <li>No crash reporting service.</li>
+  <li>No selling, renting, or sharing your data with advertisers or data brokers.</li>
+  <li>No collection of your location, contacts, photos, or files outside the app.</li>
+</ul>
+
+<h2>Permissions the app asks for</h2>
+<ul>
+  <li><strong>Internet</strong> — to sync your documents and to reach Google Drive.</li>
+  <li><strong>Network state</strong> — to detect when you are offline and defer syncing.</li>
+</ul>
+<p>Paper Docs asks for no location, camera, microphone, contacts, or storage permission.</p>
+
+<h2>Your choices and control</h2>
+<ul>
+  <li><strong>Stay offline.</strong> Everything works with no account. Nothing is transmitted.</li>
+  <li><strong>Sign out.</strong> Removes the account link from the device. Your documents remain
+      on the device and are not deleted.</li>
+  <li><strong>Revoke Drive.</strong> You can remove Paper Docs' Drive access at any time from your
+      Google account settings.</li>
+  <li><strong>Delete a document.</strong> Permanently deleting a document removes the cloud copy,
+      the document's version history, and the local copy.</li>
+  <li><strong>Delete everything from the cloud.</strong> Account settings include
+      <em>Delete my cloud data</em>, which permanently removes every document Paper Docs has
+      uploaded for your account, plus your presence entries, your shared-document listings, and
+      the email lookup entry described above. Your documents remain on this device.</li>
+  <li><strong>Delete your account.</strong> Account settings also include
+      <em>Delete my account and data</em>. This removes your documents, versions, and notes from
+      both this device and the cloud, removes your presence and sharing entries from other
+      people's documents, and deletes your Paper Docs account from Firebase Authentication. Your
+      Google account itself is not affected, and you can create a new Paper Docs account at any
+      time by signing in again. This cannot be undone.</li>
+</ul>
+
+<p>Deleting a document removes it everywhere it is stored, so it cannot be recovered from the
+cloud afterwards. Cloud deletions require an internet connection; if one cannot be completed the
+app tells you and does not delete the local copy, so nothing is left in an inconsistent state.</p>
+
+<h2>Children</h2>
+<p>Paper Docs is not directed at children under 13, and we do not knowingly collect personal
+information from them.</p>
+
+<h2>Security</h2>
+<p>Documents are stored in a private database that is readable only by you and the people you
+share with. Access is enforced by Firestore security rules on Google's servers, not merely by
+the app.</p>
+
+<h2>Changes to this policy</h2>
+<p>If this policy changes, the effective date above will change and the updated policy will be
+published at this address.</p>
+
+<h2>Contact</h2>
+<p>Questions about this policy or your data can be sent to
+<a href="mailto:mainakkundu13@gmail.com">mainakkundu13@gmail.com</a>.</p>
+
+<footer>
+  <p>Paper Docs is an independent application. It is not affiliated with, endorsed by, or
+  sponsored by Google LLC. Google Drive, Firebase and Google account services are trademarks of
+  Google LLC.</p>
+</footer>
+
+</main>
+</body>
+</html>

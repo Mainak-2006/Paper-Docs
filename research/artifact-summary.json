@@ -1,0 +1,112 @@
+{
+  "evidence_id": "ev_e98cc1bc53db71824044adfa2541f1179f580b367689cd1127b8a3fd482e5243",
+  "subject": {
+    "name": "base.apk",
+    "digest": {
+      "sha256": "a3255bf6c47356b37eb1a4cd8c9ea108f1fbbe9625da450101505dc56099e2e2"
+    },
+    "local_path": "/home/mikey2006/Downloads/com.google.android.apps.docs.editors.docs/base.apk",
+    "format": "apk",
+    "architecture": null
+  },
+  "operation": "inspect_artifact",
+  "result_keys": [
+    "inspection_id",
+    "subject",
+    "substeps",
+    "observations",
+    "hypotheses",
+    "contradictions",
+    "unexplored_branches",
+    "next_probes",
+    "coverage",
+    "evidence_links",
+    "limitations"
+  ],
+  "substeps": [
+    {
+      "operation": "inventory_artifact",
+      "status": "completed",
+      "evidence_id": "ev_0380b821e64c906915c232493149a59c08753a6b651f2e6af1e74a07f2298d3f"
+    }
+  ],
+  "limitations": [
+    "Inspection derives bounded static hypotheses and next probes; it does not execute the artifact or claim format-specific semantics.",
+    "Logical archive names collide under English (en-US) Unicode case folding; a case-insensitive destination cannot store both spellings. This comparison is not a filesystem observation.",
+    "ZIP inventory lists central-directory entries only. Non-entry bytes, including an APK Signing Block before the central directory or a ZIP comment after it, are not occurrences."
+  ],
+  "unknowns": null,
+  "supplemental_zip_inventory": {
+    "member_count": 4541,
+    "dex_files": [
+      "classes.dex",
+      "classes2.dex",
+      "classes3.dex",
+      "classes4.dex",
+      "classes5.dex",
+      "classes6.dex"
+    ],
+    "asset_paths_sample": [
+      "assets/AltFormats_255",
+      "assets/AltFormats_27",
+      "assets/AltFormats_30",
+      "assets/AltFormats_31",
+      "assets/AltFormats_34",
+      "assets/AltFormats_350",
+      "assets/AltFormats_351",
+      "assets/AltFormats_352",
+      "assets/AltFormats_358",
+      "assets/AltFormats_359",
+      "assets/AltFormats_36",
+      "assets/AltFormats_372",
+      "assets/AltFormats_373",
+      "assets/AltFormats_380",
+      "assets/AltFormats_381",
+      "assets/AltFormats_385",
+      "assets/AltFormats_39",
+      "assets/AltFormats_43",
+      "assets/AltFormats_44",
+      "assets/AltFormats_49",
+      "assets/AltFormats_505",
+      "assets/AltFormats_506",
+      "assets/AltFormats_52",
+      "assets/AltFormats_54",
+      "assets/AltFormats_55",
+      "assets/AltFormats_58",
+      "assets/AltFormats_595",
+      "assets/AltFormats_61",
+      "assets/AltFormats_62",
+      "assets/AltFormats_64",
+      "assets/AltFormats_66",
+      "assets/AltFormats_675",
+      "assets/AltFormats_676",
+      "assets/AltFormats_679",
+      "assets/AltFormats_7",
+      "assets/AltFormats_81",
+      "assets/AltFormats_84",
+      "assets/AltFormats_855",
+      "assets/AltFormats_856",
+      "assets/AltFormats_90",
+      "assets/AltFormats_91",
+      "assets/AltFormats_94",
+      "assets/AltFormats_95",
+      "assets/AltFormats_971",
+      "assets/AltFormats_972",
+      "assets/AltFormats_995",
+      "assets/Metadata_800",
+      "assets/Metadata_808",
+      "assets/Metadata_870",
+      "assets/Metadata_878",
+      "assets/Metadata_881",
+      "assets/Metadata_882",
+      "assets/Metadata_883",
+      "assets/Metadata_888",
+      "assets/Metadata_979",
+      "assets/Metadata_AC",
+      "assets/Metadata_AD",
+      "assets/Metadata_AE",
+      "assets/Metadata_AF",
+      "assets/Metadata_AG"
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+.gradle/
+.kotlin/
+**/build/
+local.properties
+.idea/
+.tools/
+*.apk
+*.apkm
+*.xapk
+research/sdk-resources.txt
+research/sdk-manifest.txt
+research/base-artifact.json
+research/emulator.log
+research/*-ui.xml
+
+# The extracted Google Docs APK bundle used for the RE research. `*.apk` above already excludes the
+# APKs themselves, but the directory also holds Google's icon.png and their META-INF/APKMIRRO
+# signing signature blocks. Those are Google's packaged assets and their signature material, they
+# are analysis inputs rather than project source, and README.md states that no packaged assets were
+# copied into the app. Nothing here belongs in the repository. The evidence summary that research
+# actually depends on stays in research/, and the full archive stays local as before.
+com.google.android.apps.docs.editors.docs/
+
+# firebase-tools deploy cache, a generated local artifact.
+site/.firebase/
+
+# Release signing material. A published signing key cannot be rotated for an existing Play
+# listing, so neither the keystore nor its passwords may ever reach the repository.
+keystore.properties
+*.jks
+*.keystore
