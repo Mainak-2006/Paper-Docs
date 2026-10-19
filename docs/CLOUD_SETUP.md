@@ -53,8 +53,12 @@ To re-read it after a backup restore:
 
 ```bash
 keytool -list -v -alias paperdocs -keystore ~/.keys/paperdocs-release.jks \
-  -storepass "$(grep '^storePassword=' keystore.properties | cut -d= -f2-)" | grep -E "SHA1|SHA-256"
+  -storepass "$(grep '^storePassword=' keystore.properties | cut -d= -f2-)" \
+  | grep -E "SHA1:|SHA256:|Valid from"
 ```
+
+Note that keytool prints `SHA1:` and `SHA256:` with no hyphen, so grep for `SHA256:` rather than
+`SHA-256:`. A grep for the hyphenated form matches nothing and silently prints an empty result.
 
 ### 2. In the Firebase console
 
