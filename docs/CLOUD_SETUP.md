@@ -134,15 +134,6 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // ---------------------------------------------------------------- directory
-
-    // Email -> uid lookup, used when sharing. Readable by any signed-in user.
-    //
-    // Writes are bound to the caller's own verified email claim. Without that binding any signed-in
-    // user could claim an arbitrary address in the table, and a later share to that address would
-    // resolve to the wrong account: write SHA256("victim@example.com") -> attacker uid, wait for
-    // the victim to share a document with their own address, and the document is handed over. The
-    // email field must therefore equal the email on the caller's own ID token.
     match /directory/{emailHash} {
       allow read: if signedIn();
       allow create, update: if signedIn()
@@ -151,20 +142,13 @@ service cloud.firestore {
       allow delete: if signedIn() && resource.data.uid == request.auth.uid;
     }
 
-    // ---------------------------------------------------------------- documents
-
     match /users/{userId}/documents/{docId} {
-      // Owners, plus anyone the document is shared with.
       allow get, list: if signedIn() && (
         request.auth.uid == userId ||
         resource.data.sharedWith[request.auth.uid] != null
       );
       allow create, delete: if signedIn() && request.auth.uid == userId;
 
-      // Owners may change anything. Editors may change the text but not the access control list:
-      // without the affectedKeys() restriction an editor could rewrite sharedWith and grant
-      // themselves EDITOR permanently, or revoke the owner and the other collaborators. Only the
-      // fields CloudSync.payload() actually writes as document content are allowed here.
       allow update: if signedIn() && (
         request.auth.uid == userId ||
         (resource.data.sharedWith[request.auth.uid] == 'EDITOR' &&
@@ -178,13 +162,6 @@ service cloud.firestore {
          ]))
       );
 
-      // Rules do not cascade to subcollections, so these need their own match.
-      //
-      // These are NOT left at `allow read: if signedIn()`. Firestore authorizes a document read by
-      // the rules on that document alone, not on its parents, so an open read here would let any
-      // signed-in user who knows (or guesses) an owner uid and a document id read the share list
-      // and the presence list of a document they cannot otherwise open. The share entries carry
-      // the document title, and the presence entries carry names and photo URLs.
       match /sharedWith/{personUid} {
         allow read: if signedIn() && (
           request.auth.uid == userId ||
@@ -201,44 +178,15 @@ service cloud.firestore {
                .data.sharedWith[request.auth.uid] != null
         );
         allow create, update: if signedIn() && request.auth.uid == personUid;
-        // The owner sweeps the presence subcollection when a document is deleted. Without this the
-        // rows addressed to other people would be stranded behind a deleted document, because the
-        // rule above only lets each user write their own row.
         allow delete: if signedIn() && request.auth.uid == userId;
       }
     }
 
-    // ---------------------------------------------------------------- collection group rules
-
-    // Firestore only authorizes a collectionGroup() query through a rule written with a recursive
-    // wildcard, so the nested matches above do NOT cover the queries in
-    // CloudSync.sharedWithMe() and CloudSync.deleteAllCloudData(). Without these the shared-with-me
-    // lookup fails with PERMISSION_DENIED and nothing shared is ever listed.
-    //
-    // A bare `allow read: if signedIn()` here is a data leak, because a collection group query is
-    // authorized against the documents it returns and never against their ancestors. Any signed-in
-    // user could run collectionGroup("sharedWith").get() and read every share entry in the
-    // application -- owner uid, document id, document title, role -- not just their own.
-    //
-    // These rules therefore grant only what the *nested* matches cannot: a person acting on their
-    // own row, identified from the row's own contents. Every owner case is already covered by the
-    // nested matches above, because Firestore allows a request when ANY matching rule allows it.
-    // That is also why nothing here parses the {path=**} wildcard: it is a list with no usable
-    // length function, and calling one raises a runtime error, which Firestore treats as a denial.
-    // An earlier version of these rules recovered the owner from path[1] and guarded it with
-    // path.size(); that silently denied every read it was supposed to allow, including all presence.
-
-    // Shared-document index: a recipient reads their own entry, which is exactly the query behind
-    // CloudSync.sharedWithMe(), and deletes it to hide the document (CloudSync.hideShared()).
     match /{path=**}/sharedWith/{personUid} {
       allow get, list: if signedIn() && resource.data.uid == request.auth.uid;
       allow delete: if signedIn() && personUid == request.auth.uid;
     }
 
-    // Presence: a person may read and clear their own rows. deleteAllCloudData() uses exactly this,
-    // sweeping the caller's presence out of documents other people own. Owners reading the whole
-    // presence list, and collaborators reading it to see who else has the document open, are both
-    // served by the nested match above.
     match /{path=**}/presence/{personUid} {
       allow get, list: if signedIn() && resource.data.uid == request.auth.uid;
       allow create, update: if signedIn() && request.auth.uid == personUid;
