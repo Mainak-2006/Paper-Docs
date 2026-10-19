@@ -1,6 +1,7 @@
 package com.company.paperdocs
 
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.*
 import androidx.test.filters.LargeTest
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -42,12 +43,26 @@ class WorkspaceUiTest {
         // account makes the editor do a Firestore round trip on open.
         compose.waitUntil(20_000) { compose.onAllNodesWithText("Untitled document").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Untitled document").performClick()
-        // Clicking the title turns it into a field, which is a separate composition and not a
-        // synchronous consequence of the click. Without this wait the very next line races the
-        // recomposition and fails with "could not find any node that satisfies SetText...". It
-        // passed on a fast local emulator and failed on CI, which is what made it look flaky.
-        compose.waitUntil(20_000) {
-            compose.onAllNodes(hasSetTextAction() and hasText("Untitled document")).fetchSemanticsNodes().isNotEmpty()
+        // Clicking the title opens the "Rename document" dialog, whose OutlinedTextField carries the
+        // current title. That dialog is a separate composition, so wait for the editable node rather
+        // than assuming it is there on the next line.
+        try {
+            compose.waitUntil(20_000) {
+                compose.onAllNodes(hasSetTextAction() and hasText("Untitled document")).fetchSemanticsNodes().isNotEmpty()
+            }
+        } catch (timeout: ComposeTimeoutException) {
+            // A bare "could not find node" says nothing about what was on screen, which makes this
+            // failure undiagnosable without rerunning. Report the editable nodes that did exist.
+            val editable = compose.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().map { node ->
+                node.config.getOrNull(SemanticsProperties.EditableText)?.text
+                    ?: node.config.getOrNull(SemanticsProperties.Text)?.joinToString("") { it.text }
+                    ?: "(no text)"
+            }
+            val dialogShown = compose.onAllNodesWithText("Rename document").fetchSemanticsNodes().isNotEmpty()
+            throw AssertionError(
+                "Timed out waiting for the editable title. " +
+                    "Rename dialog showing: $dialogShown. Editable nodes present: $editable"
+            )
         }
         compose.onNode(hasSetTextAction() and hasText("Untitled document")).performTextReplacement(title)
         compose.onNodeWithText("Save", useUnmergedTree = true).performClick()
