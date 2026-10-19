@@ -1,0 +1,71 @@
+name: Verify
+
+# The gate every push and pull request has to pass. `assembleRelease` runs
+# `lintVitalRelease` as part of the build, so anything Google Play would reject at upload time fails
+# here instead, which is cheaper than discovering it in the console.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build, unit tests, release lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # JDK 21 matches the Android Studio runtime this project is built with locally, so CI and
+      # local agree on the toolchain. AGP 8.13.2 supports 17 through 21.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '21'
+
+      - name: Accept the Android SDK licences
+        run: |
+          for dir in "$ANDROID_HOME/cmdline-tools/latest" "$ANDROID_HOME/cmdline-tools"/*/; do
+            [ -x "$dir/bin/sdkmanager" ] && yes | "$dir/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
+          done
+          exit 0
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-cleanup: on-success
+
+      # No signing credentials are configured, so this produces
+      # app-release-unsigned.apk. That is deliberate: a pull request build should not need access to
+      # the release key, which is unrotatable once published. Tag builds sign it; see README.md.
+      - name: Assemble release and run unit tests
+        run: ./gradlew --no-daemon :app:assembleRelease :app:testDebugUnitTest
+
+      - name: Upload unit test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report-${{ github.run_id }}
+          path: app/build/reports/tests/testDebugUnitTest/
+          retention-days: 14
+
+      # mapping.txt is what turns an obfuscated R8 stack trace back into source. Without it a crash
+      # report from a release build is unreadable, so it is kept for as long as the build could
+      # still be running in the wild.
+      - name: Upload release APK and R8 mapping
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ github.sha }}
+          path: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/mapping/release/mapping.txt
+          retention-days: 90
+          if-no-files-found: error
