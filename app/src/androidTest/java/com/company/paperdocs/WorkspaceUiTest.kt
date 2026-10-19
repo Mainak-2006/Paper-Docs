@@ -42,6 +42,13 @@ class WorkspaceUiTest {
         // account makes the editor do a Firestore round trip on open.
         compose.waitUntil(20_000) { compose.onAllNodesWithText("Untitled document").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Untitled document").performClick()
+        // Clicking the title turns it into a field, which is a separate composition and not a
+        // synchronous consequence of the click. Without this wait the very next line races the
+        // recomposition and fails with "could not find any node that satisfies SetText...". It
+        // passed on a fast local emulator and failed on CI, which is what made it look flaky.
+        compose.waitUntil(20_000) {
+            compose.onAllNodes(hasSetTextAction() and hasText("Untitled document")).fetchSemanticsNodes().isNotEmpty()
+        }
         compose.onNode(hasSetTextAction() and hasText("Untitled document")).performTextReplacement(title)
         compose.onNodeWithText("Save", useUnmergedTree = true).performClick()
         compose.waitUntil(5_000) { compose.onAllNodesWithText("Rename document").fetchSemanticsNodes().isEmpty() }
@@ -49,6 +56,11 @@ class WorkspaceUiTest {
         closeSoftKeyboard()
         compose.waitUntil(20_000) { compose.onAllNodesWithText("  Saved on this device").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithContentDescription("Back to documents").performClick()
+        // Same race as the title field above: the search field is re-composed on navigation, so
+        // wait for the editable node rather than assuming it is already there.
+        compose.waitUntil(20_000) {
+            compose.onAllNodes(hasSetTextAction() and hasText("Search your documents")).fetchSemanticsNodes().isNotEmpty()
+        }
         compose.onNode(hasSetTextAction() and hasText("Search your documents")).performTextInput(title)
         closeSoftKeyboard()
         val documentCard = hasText(title) and hasClickAction() and !hasSetTextAction()
