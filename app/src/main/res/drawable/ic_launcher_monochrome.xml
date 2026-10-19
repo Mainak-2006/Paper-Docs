@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Themed icon layer for Android 13+. The launcher tints this with the user's wallpaper palette, so
+  it has to be a flat silhouette: the page shape only, no fold highlight and no white rules, which
+  would disappear against a light tint.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108"
+    android:tint="?android:attr/colorControlNormal">
+    <path
+        android:fillColor="#000000"
+        android:pathData="M35.1,26.0h24.7l13.2,13.2v42.8h-37.9z" />
+</vector>

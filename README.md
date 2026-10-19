@@ -41,7 +41,22 @@ renderings of the same artwork live in `app/src/main/assets/` for use outside th
 | `ic_launcher_mdpi.png` | 48 × 48 |
 
 The vector stays the source of truth: it is what the launcher actually draws, and it scales
-without quality loss. There is no adaptive icon yet, so Android 8+ applies a legacy mask.
+without quality loss. It is also the reference the store feature graphic and the adaptive icon
+layers are generated from.
+
+The launcher uses an adaptive icon at `app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml`. Because
+`minSdk` is 26, every supported device resolves that file, so no legacy bitmap densities are
+needed alongside it. The artwork is split into three layers:
+
+| Layer | Purpose |
+| --- | --- |
+| `drawable/ic_launcher_background.xml` | Full-bleed `#E8F0FE` fill, masked by the launcher's shape |
+| `drawable/ic_launcher_foreground.xml` | The page, fold and text rules, rescaled onto the 108-unit canvas |
+| `drawable/ic_launcher_monochrome.xml` | Flat silhouette for Android 13+ themed icons |
+
+The foreground is positioned so the page clears the 72 × 72 region every launcher is required to
+keep visible, which means it survives the worst-case circular mask as well as the squircle and
+rounded-square shapes.
 
 ## Run it
 
@@ -87,26 +102,66 @@ keytool -genkeypair -v -keystore paperdocs-release.jks -alias paperdocs \
 
 ```properties
 # keystore.properties  (gitignored)
-storeFile=paperdocs-release.jks
+storeFile=/home/you/.keys/paperdocs-release.jks
 storePassword=…
 keyAlias=paperdocs
 keyPassword=…
 ```
 
+The keystore is kept **outside the repository** so that `git clean -xfd` cannot destroy a key that
+cannot be rotated. `storeFile` is an absolute path for that reason; it differs per machine.
+
+Google Play accepts **Android App Bundles**, not APKs, for new apps. That is the upload unit:
+
 ```bash
-JAVA_HOME=/opt/android-studio/jbr ./gradlew :app:assembleRelease
-# app/build/outputs/apk/release/app-release.apk
+JAVA_HOME=/opt/android-studio/jbr ./gradlew :app:bundleRelease
+# app/build/outputs/bundle/release/app-release.aab
 ```
 
-Without those credentials the build still succeeds and emits `app-release-unsigned.apk`, which is
-what a CI job should produce. `lintVitalRelease` runs as part of `assembleRelease`, so anything
-Google Play blocks a release for fails the build rather than the upload.
+An APK is still built by `:app:assembleRelease` for sideloading and for CI. Both run R8, resource
+shrinking, and `lintVitalRelease`, so anything Google Play blocks a release for fails the build
+rather than the upload.
+
+An `.aab` is signed with JAR signing rather than the APK v2 scheme, so verify it with `jarsigner`:
+
+```bash
+$JAVA_HOME/bin/jarsigner -verify -certs app/build/outputs/bundle/release/app-release.aab
+jar verified.
+```
+
+`PKIX path building failed` and `signer certificate is self-signed` are expected and harmless for a
+self-signed release key. Confirm the identity actually matches yours:
+
+```bash
+unzip -p app/build/outputs/bundle/release/app-release.aab META-INF/PAPERDOC.RSA \
+  > /tmp/signer.rsa && $JAVA_HOME/bin/keytool -printcert -file /tmp/signer.rsa
+```
+
+Without signing credentials either build still succeeds and emits an unsigned artifact, which is
+what an untrusted CI job should produce.
 
 **Register the release fingerprint before shipping.** The OAuth client in `google-services.json`
 carries the *debug* SHA-1. A build signed with a different key is rejected by Google sign-in with
 error 125 until its SHA-1 is added in **Firebase console → Project settings → Your apps** and in
 **Google Cloud Console → APIs & Services → Credentials**. A published signing key cannot be
 rotated for an existing Play listing, so back the keystore up before the first upload.
+
+Play App Signing is required for new apps. Enrol this same keystore as the app signing key so the
+fingerprint above is the one users' installs actually present. If you let Google generate the key
+instead, download that one from **Play Console → Setup → App signing** and register it instead — the
+keystore here would then only ever be the upload key.
+
+## Store listing
+
+| Asset | Where it is |
+| --- | --- |
+| 512 × 512 icon | `app/src/main/assets/ic_launcher.png` |
+| 1024 × 500 feature graphic | `play/feature-graphic-1024x500.png` |
+| Privacy policy | `site/public/privacy-policy.html`, deployed to `paper-docs-006.web.app` |
+
+Regenerate the feature graphic with `python3 play/make_feature_graphic.py`; it replays the launcher
+vector's paths rather than upscaling a PNG, so it stays crisp. Play rejects graphics with an alpha
+channel, which is why the script writes RGB.
 
 ## Features
 
@@ -241,6 +296,10 @@ thread. Editor UI is native Kotlin; no editor WebView is used.
 
 ## Verification
 
+Three suites, because the app has three separate kinds of logic to get wrong.
+
+**Unit tests** (JVM) and **instrumentation tests** (device or emulator):
+
 ```bash
 JAVA_HOME=/opt/android-studio/jbr ./gradlew \
   :app:assembleDebug :app:testDebugUnitTest \
@@ -254,17 +313,59 @@ Instrumentation tests need a running emulator or attached device. Coverage inclu
 - Caret formatting, list continuation, undo/redo, and replace-all.
 - Ordered database writes, reopen persistence, star preservation, notes,
   version snapshots, trash/restore, and cascading deletion.
+- Full local wipe for account deletion: documents, notes, and versions all go.
 - DOCX round-trip text/styles, headings, real list numbering, hyperlinks, and the
   `numbering.xml`/hyperlink package parts; malformed XML rejection.
 - Sync conflict rules: newer remote adopted, simultaneous edits flagged, both sides
   recoverable, and both resolution paths.
 - PDF opening/page dimensions/pagination and HTML escaping.
-- Creating, renaming, typing in the native editor, searching, reopening, and
-  activity recreation through the real UI.
+
+**Firestore security rules** (Node, against the emulator). The rules are the app's only
+enforced security boundary and they run on Google's servers, so no Kotlin test can
+observe them:
+
+```bash
+npm ci
+npm run test:rules:emulated
+```
+
+19 tests cover the editor access-control restriction, the email-directory binding,
+the share and presence index leaks, and the legitimate reads alongside them. This
+suite has already caught a ruleset that compiled, deployed, and silently denied
+everything it was meant to allow. See [`docs/CLOUD_SETUP.md`](docs/CLOUD_SETUP.md).
 
 Reports: `app/build/reports/tests/testDebugUnitTest/`,
 `app/build/reports/androidTests/connected/debug/`, and
 `app/build/reports/lint-results-debug.html`.
+
+### Known gap
+
+`WorkspaceUiTest.documentCanBeWrittenRenamedReopenedAndRecreated` is quarantined with
+`@Ignore`. It is the widest user flow in the app — create, rename, type, search,
+reopen, survive recreation — and it passes on a local emulator but fails on every CI
+run at the rename step. It is not flaky: the click succeeds and the dialog's editable
+field is simply absent from the Compose tree afterwards. The likely cause is that the
+`AlertDialog` renders into its own window that Compose's node queries cannot see,
+which is unconfirmed. The annotation carries the full diagnosis and the cheapest next
+step. The other 14 instrumentation tests still run and still gate `main`.
+
+### Continuous integration
+
+`.github/workflows/verify.yml` runs on every push and pull request:
+`assembleRelease` (which includes `lintVitalRelease`, so anything Play would reject at
+upload fails the build instead), `testDebugUnitTest`, and the Firestore rules suite.
+It archives the release APK and `mapping.txt` per commit SHA, because an obfuscated
+stack trace cannot be read back without the mapping.
+
+`.github/workflows/instrumentation.yml` runs the emulator suite on `main` and nightly,
+off the pull request path.
+
+Pull request builds are deliberately **unsigned**. The release signing key cannot be
+rotated once published, so it is never given to CI on an untrusted build.
+
+## Licence
+
+Proprietary. See [`LICENSE`](LICENSE).
 
 ## REA research
 

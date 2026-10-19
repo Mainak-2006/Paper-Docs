@@ -1,0 +1,30 @@
+Copyright (c) 2026 Mainak Kundu
+
+All rights reserved.
+
+This software and its source code are the property of the copyright holder. No
+part of this software may be reproduced, copied, modified, adapted, distributed,
+published, sublicensed, sold, or used to create derivative works, in whole or in
+part, by any means, without the prior written permission of the copyright holder.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT
+HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+---
+
+Third-party components
+
+This project depends on third-party open-source software, each governed by its
+own licence. Those dependencies are not covered by the notice above and remain
+subject to their respective licences. Their licence texts are distributed with
+each dependency; in an Android build the relevant notices are available in the
+APK under the "Open source licenses" option of Google Play, or in the
+META-INF directory of a debug build.
+
+Notable dependencies include the AndroidX libraries, Jetpack Compose, Kotlin and
+its standard library, Firebase (Authentication, Firestore), Google Play services,
+OkHttp, Guava and Coil, all under the Apache License 2.0 unless stated otherwise.
