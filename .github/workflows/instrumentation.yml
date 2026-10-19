@@ -42,15 +42,19 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       # API 35 with the same AVD shape used locally, so a failure here is a real regression rather
-      # than an environment difference.
+      # than an environment difference. The profile is an avdmanager device id and is lowercase with
+      # underscores -- `Pixel_6` is rejected by avdmanager, `pixel_6` is accepted. Run
+      # `avdmanager list device` if a future runner image renames these.
       - name: Run connected tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
           target: google_apis
           arch: x86_64
-          profile: Pixel_6
-          emulator-options: -no-window -no-snapshot -noaudio -gpu swiftshader_indirect
+          profile: pixel_6
+          # -no-boot-anim matters: without it the emulator still plays the boot animation, which
+          # adds minutes before the device is ready to accept the test APK.
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           disable-animations: true
           script: ./gradlew --no-daemon :app:connectedDebugAndroidTest
 
