@@ -48,6 +48,11 @@ keystore.properties
 .env.*
 secrets.properties
 
+# Firebase Android config. It carries the project's API key and OAuth client ids, it is per-machine
+# (the OAuth client is bound to a signing-certificate SHA-1), and it is re-downloadable from the
+# Firebase console, so it never belongs in the repository.
+google-services.json
+
 # Firebase and Google Cloud CLI output. The debug logs can contain project identifiers, auth
 # tokens and emulator traffic, so they are never useful in a repository.
 .firebase/
