@@ -172,8 +172,12 @@ class AccountManager(private val context: Context) {
         return true
     }
 
+    // Resolved by name rather than R.string because the google-services plugin only generates
+    // default_web_client_id when app/google-services.json exists, and that file is deliberately
+    // not committed: builds without it (CI, fresh clones) must still compile.
     private fun clientId(): String? = runCatching {
-        context.resources.getString(com.company.paperdocs.R.string.default_web_client_id)
+        val resId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
+        if (resId == 0) null else context.resources.getString(resId)
     }.getOrNull()
 
 

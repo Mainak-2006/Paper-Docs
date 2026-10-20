@@ -9,14 +9,18 @@ Current project: **`paper-docs-006`**, Android package **`com.company.paperdocs`
 
 ## What you already have
 
-`app/google-services.json` is present and the `com.google.gms.google-services` plugin is applied
-automatically when that file exists. The app's `applicationId` matches the registered package, so
-the build succeeds.
+`app/google-services.json` is **not committed** — it is gitignored, so a fresh clone does not
+have it. Download it from the Firebase console (Project settings → Your apps → Android app) and
+place it at `app/google-services.json`; the `com.google.gms.google-services` plugin is applied
+automatically when that file exists, and the app's `applicationId` matches the registered package.
+Without the file the app still builds and runs, with cloud features off.
 
 ## What is still missing
 
-Your `google-services.json` has an **empty `oauth_client` array**. Google sign-in cannot work
-without an OAuth client, and Drive needs a Drive API scope. Add both in the Firebase console.
+The downloaded `oauth_client` array already carries the Android client (bound to the debug SHA-1)
+and a Web client. Re-download the file after adding a fingerprint so it stays in sync. Before
+shipping, the **release** fingerprint (step 1) still has to be registered, and Drive sync has not
+yet been exercised against the real Drive API.
 
 ---
 
